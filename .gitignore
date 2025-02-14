@@ -1,0 +1,51 @@
+# 📁 Виртуальное окружение и зависимости
+poetry.lock
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 📁 Конфигурация IDE и редакторов
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# 📁 Логи и отладочная информация
+logs/
+*.log
+debug.log
+error.log
+
+# 📁 База данных и временные файлы
+/data/                    # Если база временная
+*.sqlite
+*.db
+*.db-journal
+*.sqlite3
+
+# 📁 Docker и контейнеры (если используешь)
+docker-compose.override.yml
+.env                      # Файлы с переменными окружения (API-ключи, пароли)
+.env.local
+.env.production
+.env.development
+.env.test
+
+# 📁 Jupyter Notebook (если будешь анализировать данные)
+.ipynb_checkpoints/
+
+# 📁 Кэш pip и пакетных менеджеров
+pip-wheel-metadata/
+pip-log.txt
+
+# 📁 Pytest и отладочные файлы
+.coverage
+htmlcov/
+.cache/
+pytest_cache/
+
+# 📁 MacOS и системные файлы
+.DS_Store
+Thumbs.db
