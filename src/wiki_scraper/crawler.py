@@ -61,6 +61,7 @@ def crawl_wikipedia(MAX_PAGES=100):
 
             # пропускаем если уже посещали
             if is_visited(current_url):
+                mark_as_visited(current_url)
                 continue
 
             # получаем страницу
