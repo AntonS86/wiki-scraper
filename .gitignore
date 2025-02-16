@@ -19,7 +19,9 @@ debug.log
 error.log
 
 # 📁 База данных и временные файлы
+/html/
 /data/                    # Если база временная
+/db/
 *.sqlite
 *.db
 *.db-journal
@@ -27,7 +29,7 @@ error.log
 
 # 📁 Docker и контейнеры (если используешь)
 docker-compose.override.yml
-.env                      # Файлы с переменными окружения (API-ключи, пароли)
+#.env                      # Файлы с переменными окружения (API-ключи, пароли)
 .env.local
 .env.production
 .env.development
