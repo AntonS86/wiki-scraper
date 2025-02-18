@@ -1,3 +1,4 @@
+import json
 import sqlite3
 
 from wiki_scraper.config import DB_FILE
@@ -13,11 +14,19 @@ def init_db():
             cursor.execute(
                 """CREATE TABLE IF NOT EXISTS pages (
                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   url TEXT UNIQUE,
+                   url TEXT UNIQUE NOT NULL,
                    title TEXT,
-                   filepath TEXT,
-                   category TEXT,
-                   parsed INTEGER DEFAULT 0
+                   filepath TEXT NOT NULL,
+                   category TEXT
+                   )"""
+            )
+
+            # Создание таблицы для подсчета количества парсинга страниц
+            cursor.execute(
+                """CREATE TABLE IF NOT EXISTS parsed (
+                    url TEXT PRIMARY KEY,
+                    parsed_count INTEGER DEFAULT 1,
+                    last_parsed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                    )"""
             )
 
@@ -39,11 +48,171 @@ def init_db():
                 )"""
             )
 
+            # Создание таблицы для c транспортными средствами
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS vehicles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    filepath TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    model_name TEXT,
+                    also_called TEXT,
+                    model_code TEXT,
+                    production TEXT,
+                    model_years TEXT,
+                    assembly TEXT,
+                    manufacturer TEXT,
+                    class TEXT,
+                    body_style TEXT,
+                    platform TEXT,
+                    engine TEXT,
+                    electric_motor TEXT,
+                    electric_range TEXT,
+                    power_output TEXT,
+                    transmission TEXT,
+                    battery TEXT,
+                    wheelbase TEXT,
+                    layout TEXT,
+                    length TEXT,
+                    width TEXT,
+                    height TEXT,
+                    weight TEXT,
+                    kerb_weight TEXT,
+                    curb_weight TEXT,
+                    json TEXT,
+                    UNIQUE (url, model_name)
+                );
+            """
+            )
+
             conn.commit()
 
             logger.info("База данных инициализирована.")
     except sqlite3.OperationalError as e:
         logger.error(f"Ошибка операции с БД: {e}. eacd40ac-a73d-46ce-b911-67b8d5b5028f")
+        raise
+
+
+def increment_parsed_count(url):
+    """Увеличивает счетчик parsed для URL"""
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO parsed (url, parsed_count)
+            VALUES (?, 1)
+            ON CONFLICT(url) DO UPDATE SET
+                parsed_count = parsed_count + 1,
+                last_parsed = CURRENT_TIMESTAMP
+        """,
+            (url,),
+        )
+
+        conn.commit()
+    except sqlite3.DatabaseError as e:
+        logger.error(f"Ошибка увеличения счетчика в таблице parsed: {e}. 3d272c8b-2acd-4e98-bf29-accdd60fd675")
+        raise
+
+
+def add_vehicle(data):
+    """Добавляет транспортное средство в базу данных"""
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            cursor = conn.cursor()
+            # храним json данные в отдельном поле
+            cursor.execute(
+                """
+                           INSERT OR IGNORE INTO vehicles (
+                           also_called,
+                           assembly,
+                           battery,
+                           body_style,
+                           class,
+                           curb_weight,
+                           electric_motor,
+                           electric_range,
+                           engine,
+                           filepath,
+                           height,
+                           kerb_weight,
+                           layout,
+                           length,
+                           manufacturer,
+                           model_code,
+                           model_name,
+                           model_years,
+                           platform,
+                           power_output,
+                           production,
+                           transmission,
+                           url,
+                           weight,
+                           wheelbase,
+                           width,
+                           json
+                           ) VALUES (
+                           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                           ?, ?, ?, ?, ?, ?, ?
+                           )""",
+                (
+                    data["also_called"],
+                    data["assembly"],
+                    data["battery"],
+                    data["body_style"],
+                    data["class"],
+                    data["curb_weight"],
+                    data["electric_motor"],
+                    data["electric_range"],
+                    data["engine"],
+                    data["filepath"],
+                    data["height"],
+                    data["kerb_weight"],
+                    data["layout"],
+                    data["length"],
+                    data["manufacturer"],
+                    data["model_code"],
+                    data["model_name"],
+                    data["model_years"],
+                    data["platform"],
+                    data["power_output"],
+                    data["production"],
+                    data["transmission"],
+                    data["url"],
+                    data["weight"],
+                    data["wheelbase"],
+                    data["width"],
+                    json.dumps(data),
+                ),
+            )
+            conn.commit()
+    except sqlite3.DatabaseError as e:
+        logger.error(f"Ошибка добавления транспортного средства: {e}. 88353cb0-0e20-426d-b574-77da7404ac5a")
+        raise
+
+
+def get_car_pages_generator(batch_size=1000):
+    """Генератор для построчного чтения данных"""
+
+    offset = 0
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            while True:
+                cursor.execute("SELECT * FROM pages WHERE category = 'car' LIMIT ? OFFSET ?", (batch_size, offset))
+                rows = cursor.fetchall()
+                # Если строк больше нет — выходим
+                if not rows:
+                    break
+
+                # Возвращаем каждую строку по одной
+                yield from rows
+                offset += batch_size
+    except sqlite3.DatabaseError as e:
+        logger.error(f"Ошибка получения страниц: {e}. edcf1df0-364e-4545-9074-1fe1c9a262f6")
         raise
 
 

@@ -6,10 +6,13 @@ import requests
 
 from wiki_scraper.config import HTML_PATH
 from wiki_scraper.logger import logger
-from wiki_scraper.scraper import parse_wikipedia_page
+from wiki_scraper.scraper import parse_vehicle_page, parse_wikipedia_page
 from wiki_scraper.storage import (
     add_new_links_to_queue,
+    add_vehicle,
+    get_car_pages_generator,
     get_next_url,
+    increment_parsed_count,
     is_visited,
     mark_as_visited,
     save_page,
@@ -82,8 +85,10 @@ def crawl_wikipedia(MAX_PAGES=100):
             # сохраняем HTML в файл
             save_html_to_file(page_data)
 
-            # добавляем новые ссылки в очередь, только не посещенные
-            add_new_links_to_queue([link for link in page_data["links"] if not is_visited(link)])
+            # если мы смогли классифицировать страницу, то добавляем новые ссылки в очередь
+            if not page_data["category"] == "unknown":
+                # добавляем новые ссылки в очередь, только не посещенные
+                add_new_links_to_queue([link for link in page_data["links"] if not is_visited(link)])
 
             # добавляем в посещенные только после
             # успешного сохранения в БД и файл
@@ -116,3 +121,21 @@ def crawl_wikipedia(MAX_PAGES=100):
         except Exception as e:
             logger.error(f"Ошибка при обработке {current_url}: {e}; 3bb71c46-60bb-43d7-868b-81521e44001f")
             break
+
+
+def crawl_vehicle_pages():
+    """парсинг страниц с транспортными средствами"""
+    for page in get_car_pages_generator():
+        try:
+            with open(HTML_PATH / page["filepath"], "r", encoding="utf-8") as file:
+                html = file.read()
+                result = parse_vehicle_page(page["url"], html)
+                for item in result:
+                    # todo: исправить дублирование данных
+                    add_vehicle(item)
+
+            # увеличиваем счетчик парсинга страницы
+            increment_parsed_count(page["url"])
+            logger.info(f"Парсинг страницы {page['filepath']} завершен")
+        except IOError as e:
+            logger.error(f"Ошибка при чтении файла {page['filepath']}: {e}; 6cf6c6e1-7376-4a05-8158-8ca4203f6d9e")

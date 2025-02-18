@@ -18,26 +18,31 @@ def url_to_filepath(url):
 
 # шаблоны для классификации по категориям
 patterns = {
-    "manufacturers": r"^List_of_automobile_manufacturers$",
-    "industry_country": r"^Automotive_industry_in_([A-Z][a-z]+_?)+$",
-    "manufacturers_country": r"^List_of_automobile_manufacturers_of_([A-Z][a-z]+_?)+$",
-    "car_brands": r"^List_of_car_brands$",
-    "brand_vehicles": r"^List_of_[A-Z][a-zA-Z0-9_-]+_vehicles$",
+    "list_of_vehicles_manufacturers1": re.compile(
+        r"List_of_(?:the_)?[\w]*?(automobile_manufacturers|car_brands|vehicles|automobiles|cars)"
+    ),
+    "list_of_vehicles_manufacturers2": re.compile(
+        r"^List_of_(?:car|defunct_car|automobile|defunct_automobile)_manufacturers_(?:of|in|by)_(?:the_)?[\w]+?$"
+    ),
+    "list_of_vehicles_industry1": re.compile(r"^Automotive_industry_(?:of|in|by)_(?:the_)?[\w]+?$"),
+    "list_of_vehicles_sales1": re.compile(
+        r"^List_of_(?:automobile|truck|bus|motorcycle|scooter|bicycle)_sales_(?:of|in|by)_(?:the_)?[\w]+?$"
+    ),
 }
 
 
 # классифицируем страницу по url
 def classify_page_by_url(url):
     for category, pattern in patterns.items():
-        if re.match(pattern, url):
+        if pattern.match(url):
             return category
     return None
 
 
-print(classify_page_by_url("List_of_automobile_manufacturers") or None or None)
 # ключевые слова для классификации по содержимому
 content_keywords = {
     "company": [
+        "company type",
         "industry",
         "founded",
         "founder",
@@ -59,9 +64,14 @@ content_keywords = {
 
 # классифицируем страницу по содержимому
 def classify_page_by_content(soup):
-    infobox = soup.find("table", class_="infobox")
-    if infobox:
+    # Ищем все инфобоксы на странице
+    infoboxes = soup.find_all("table", class_="infobox")
+
+    for infobox in infoboxes:
+        # Получаем текст инфобокса и приводим его к нижнему регистру
         text = infobox.get_text().lower()
+
+        # Проверяем наличие ключевых слов для каждой категории
         for category, keywords in content_keywords.items():
             if any(keyword in text for keyword in keywords):
                 return category
@@ -140,3 +150,21 @@ def clean_html(soup):
             tag.decompose()
 
     return soup
+
+
+def str_to_column_name(str):
+    """преобразуем строку в имя колонки"""
+    return str.lower().replace(" ", "_")
+
+
+def create_model_name(page_title, infobox_title):
+    """
+    создаем имя модели
+
+    объединяем имя модели и под тип или поколение, по аналогии с википедией
+
+    """
+    if all(word in infobox_title for word in page_title.split(" ")):
+        return infobox_title
+    else:
+        return f"{page_title} ({infobox_title})"
