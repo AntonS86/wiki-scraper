@@ -99,10 +99,16 @@ def crawl_wikipedia(MAX_PAGES=100):
 
         except requests.exceptions.HTTPError as e:
             # обработка некоторых кодов ошибок
-            if response.status_code == 429:
+            if response.status_code == 429 or response.status_code == 503 or response.status_code == 403:
                 logger.warning(f"Ошибка HTTP: слишком много запросов, {e}; f4e66669-ecc1-498e-a71d-384715cb3ec7")
                 time.sleep(random.uniform(5, 15))
                 continue
+            if response.status_code == 404:
+                logger.warning(f"Ошибка HTTP: страница не найдена, {e}; 0867fcd0-a0d8-4cf5-9793-e9937c4fc0a0")
+                mark_as_visited(current_url)
+                time.sleep(random.uniform(1, 3))
+                continue
+
             logger.error(f"Ошибка HTTP: {e}; 36b8564d-a09c-4420-bf2d-d5ed93acaaac")
             break
 

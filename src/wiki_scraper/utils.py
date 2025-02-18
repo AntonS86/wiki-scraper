@@ -19,14 +19,14 @@ def url_to_filepath(url):
 # шаблоны для классификации по категориям
 patterns = {
     "list_of_vehicles_manufacturers1": re.compile(
-        r"List_of_(?:the_)?[\w]*?(automobile_manufacturers|car_brands|vehicles|automobiles|cars)"
+        r"List_of_(?:the_)?[-\w]*?(automobile_manufacturers|car_brands|vehicles|automobiles|cars)"
     ),
     "list_of_vehicles_manufacturers2": re.compile(
-        r"^List_of_(?:car|defunct_car|automobile|defunct_automobile)_manufacturers_(?:of|in|by)_(?:the_)?[\w]+?$"
+        r"^List_of_(?:car|defunct_car|automobile|defunct_automobile)_manufacturers_(?:of|in|by)_(?:the_)?[-\w]+?$"
     ),
-    "list_of_vehicles_industry1": re.compile(r"^Automotive_industry_(?:of|in|by)_(?:the_)?[\w]+?$"),
+    "list_of_vehicles_industry1": re.compile(r"^Automotive_industry_(?:of|in|by)_(?:the_)?[-\w]+?$"),
     "list_of_vehicles_sales1": re.compile(
-        r"^List_of_(?:automobile|truck|bus|motorcycle|scooter|bicycle)_sales_(?:of|in|by)_(?:the_)?[\w]+?$"
+        r"^List_of_(?:automobile|truck|bus|motorcycle|scooter|bicycle)_sales_(?:of|in|by)_(?:the_)?[-\w]+?$"
     ),
 }
 
