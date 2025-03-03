@@ -1,7 +1,7 @@
-import json
 import sqlite3
 
 from wiki_scraper.config import DB_FILE
+from wiki_scraper.custom_types import Vehicle
 from wiki_scraper.logger import logger
 
 
@@ -56,31 +56,70 @@ def init_db():
                     filepath TEXT NOT NULL,
                     url TEXT NOT NULL,
                     model_name TEXT,
-                    also_called TEXT,
                     model_code TEXT,
-                    production TEXT,
-                    model_years TEXT,
-                    assembly TEXT,
-                    manufacturer TEXT,
-                    class TEXT,
+                    production_start_year INTEGER,
+                    production_end_year INTEGER,
+                    vehicle_class TEXT,
                     body_style TEXT,
-                    platform TEXT,
-                    engine TEXT,
-                    electric_motor TEXT,
-                    electric_range TEXT,
-                    power_output TEXT,
-                    transmission TEXT,
-                    battery TEXT,
-                    wheelbase TEXT,
                     layout TEXT,
-                    length TEXT,
-                    width TEXT,
-                    height TEXT,
-                    weight TEXT,
-                    kerb_weight TEXT,
-                    curb_weight TEXT,
+                    wheelbase REAL,
+                    length REAL,
+                    width REAL,
+                    height REAL,
+                    weight REAL,
                     json TEXT,
                     UNIQUE (url, model_name)
+                );
+            """
+            )
+
+            # создание таблицы для хранения данных о двигателе
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS engines (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    vehicle_id INTEGER NOT NULL,
+                    text TEXT,
+                    type_fuel TEXT,
+                    volume REAL,
+                    power REAL
+                );
+            """
+            )
+
+            # создание таблицы для хранения данных о коробке передач
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS transmissions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    vehicle_id INTEGER NOT NULL,
+                    text TEXT,
+                    type TEXT,
+                    speed INTEGER
+                );
+            """
+            )
+
+            # создание таблицы для хранения данных о странах сборки
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS assemblies (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    vehicle_id INTEGER NOT NULL,
+                    country TEXT,
+                    UNIQUE (vehicle_id, country)
+                );
+            """
+            )
+
+            # создание таблицы для хранения данных о производителях
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS manufacturers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    vehicle_id INTEGER NOT NULL,
+                    company TEXT,
+                    UNIQUE (vehicle_id, company)
                 );
             """
             )
@@ -116,77 +155,118 @@ def increment_parsed_count(url):
         raise
 
 
-def add_vehicle(data):
+def add_vehicle(data: Vehicle):
     """Добавляет транспортное средство в базу данных"""
     try:
         with sqlite3.connect(DB_FILE) as conn:
             cursor = conn.cursor()
-            # храним json данные в отдельном поле
+            # вставляем автомобиль в таблицу vehicles
             cursor.execute(
                 """
-                           INSERT OR IGNORE INTO vehicles (
-                           also_called,
-                           assembly,
-                           battery,
-                           body_style,
-                           class,
-                           curb_weight,
-                           electric_motor,
-                           electric_range,
-                           engine,
-                           filepath,
-                           height,
-                           kerb_weight,
-                           layout,
-                           length,
-                           manufacturer,
-                           model_code,
-                           model_name,
-                           model_years,
-                           platform,
-                           power_output,
-                           production,
-                           transmission,
-                           url,
-                           weight,
-                           wheelbase,
-                           width,
-                           json
-                           ) VALUES (
-                           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                           ?, ?, ?, ?, ?, ?, ?
-                           )""",
+                    INSERT OR IGNORE INTO vehicles (
+                    url,
+                    filepath,
+                    model_name,
+                    model_code,
+                    production_start_year,
+                    production_end_year,
+                    vehicle_class,
+                    body_style,
+                    layout,
+                    wheelbase,
+                    length,
+                    width,
+                    height,
+                    weight,
+                    json
+                    ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?
+                    )""",
                 (
-                    data["also_called"],
-                    data["assembly"],
-                    data["battery"],
-                    data["body_style"],
-                    data["class"],
-                    data["curb_weight"],
-                    data["electric_motor"],
-                    data["electric_range"],
-                    data["engine"],
-                    data["filepath"],
-                    data["height"],
-                    data["kerb_weight"],
-                    data["layout"],
-                    data["length"],
-                    data["manufacturer"],
-                    data["model_code"],
-                    data["model_name"],
-                    data["model_years"],
-                    data["platform"],
-                    data["power_output"],
-                    data["production"],
-                    data["transmission"],
                     data["url"],
-                    data["weight"],
+                    data["filepath"],
+                    data["model_name"],
+                    data["model_code"],
+                    data["production_start_year"],
+                    data["production_end_year"],
+                    data["vehicle_class"],
+                    data["body_style"],
+                    data["layout"],
                     data["wheelbase"],
+                    data["length"],
                     data["width"],
-                    json.dumps(data),
+                    data["height"],
+                    data["weight"],
+                    data["json"],
                 ),
             )
+
+            # получаем id добавленного автомобиля
+            vehicle_id = cursor.lastrowid
+            # Если запись уже существовала, получаем ID вручную
+            if vehicle_id is None:
+                cursor.execute(
+                    "SELECT id FROM vehicles WHERE url = ? and model_name = ?", (data["url"], data["model_name"])
+                )
+                result = cursor.fetchone()
+                if not result:
+                    return
+                vehicle_id = result[0]
+
+            # вставляем данные о двигателе
+            for engine in data["engine_list"]:
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO engines (
+                        vehicle_id,
+                        text,
+                        type_fuel,
+                        volume,
+                        power
+                    ) VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (vehicle_id, engine["text"], engine["type_fuel"], engine["volume"], engine["power"]),
+                )
+
+            # вставляем данные о коробке передач
+            for transmission in data["transmission_list"]:
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO transmissions (
+                        vehicle_id,
+                        text,
+                        type,
+                        speed
+                    ) VALUES (?, ?, ?, ?)
+                    """,
+                    (vehicle_id, transmission["text"], transmission["type"], transmission["speed"]),
+                )
+
+            # вставляем данные о странах сборки
+            for country in data["assembly_list"]:
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO assemblies (
+                        vehicle_id,
+                        country
+                    ) VALUES (?, ?)
+                    """,
+                    (vehicle_id, country),
+                )
+
+            # вставляем данные о производителях
+            for company in data["manufacturer_list"]:
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO manufacturers (
+                        vehicle_id,
+                        company
+                    ) VALUES (?, ?)
+                    """,
+                    (vehicle_id, company),
+                )
+
             conn.commit()
     except sqlite3.DatabaseError as e:
         logger.error(f"Ошибка добавления транспортного средства: {e}. 88353cb0-0e20-426d-b574-77da7404ac5a")

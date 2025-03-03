@@ -20,10 +20,11 @@ if __name__ == "__main__":
                 "https://en.wikipedia.org/wiki/List_of_Mercedes-Benz_vehicles",
             ]
         )
-        logger.info("Запуск парсинга страниц с транспортными средствами")
+        logger.info("Поиск и скачивание страниц с транспортными средствами")
         # запускаем процесс обхода
         crawl_wikipedia(MAX_PAGES=30000)
         # запускаем процесс парсинга страниц с транспортными средствами
+        logger.info("Запуск парсинга страниц с транспортными средствами")
         crawl_vehicle_pages()
         logger.info("Завершение программы")
     except Exception as e:
