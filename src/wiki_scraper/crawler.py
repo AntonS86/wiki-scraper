@@ -17,6 +17,7 @@ from wiki_scraper.storage import (
     mark_as_visited,
     save_page,
 )
+from wiki_scraper.utils import find_canonical_url
 
 WIKI_BASE_URL = "https://en.wikipedia.org/wiki/"
 
@@ -76,6 +77,19 @@ def crawl_wikipedia(MAX_PAGES=100):
             # обнуляем ошибку соединения
             connection_error_count = 0
 
+            canonical_url = find_canonical_url(response.text)
+            is_redirect = canonical_url and canonical_url != current_url
+            # если был редирект
+            if is_redirect:
+                # помечаем как посещенную текущую страницу
+                mark_as_visited(current_url)
+                # если редирект на посещенную страницу, то пропускаем
+                if is_visited(canonical_url):
+                    continue
+                else:
+                    # если редирект на новую страницу, то обновляем текущий URL
+                    current_url = canonical_url
+
             # парсим страницу
             page_data = parse_wikipedia_page(current_url, response.text)
 
@@ -95,7 +109,7 @@ def crawl_wikipedia(MAX_PAGES=100):
             mark_as_visited(current_url)
 
             # задержка между запросами
-            time.sleep(random.uniform(1, 3))
+            time.sleep(random.uniform(0.5, 1.1))
 
         except requests.exceptions.HTTPError as e:
             # обработка некоторых кодов ошибок

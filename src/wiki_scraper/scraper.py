@@ -10,7 +10,7 @@ from wiki_scraper.utils import (
     clean_html,
     clean_wiki_url,
     create_model_name,
-    get_wiki_links,
+    find_links_by_category_page,
     layout_parse,
     parse_assembly_countries,
     parse_body_style,
@@ -32,22 +32,20 @@ def parse_wikipedia_page(url, response_text):
     # путь к файлу
     filepath = url_to_filepath(url)
 
-    soup = BeautifulSoup(response_text, "html.parser")
-
-    # получаем ссылки на страницы внутри википедии
-    links = get_wiki_links(soup)
+    soup: Tag = BeautifulSoup(response_text, "html.parser")
 
     # очищаем страницу от скриптов, картинок, стилей и т.д.
     soup = clean_html(soup)
 
     # поиск заголовка страницы
-    title = ""
     page_title = soup.find("h1", class_="mw-first-heading")
-    if page_title:
-        title = page_title.get_text()
+    title = page_title.get_text() if page_title else ""
 
     # классификация по содержимому
     category = classify_page(clean_wiki_url(url), soup)
+
+    # получаем ссылки на страницы внутри википедии
+    links = find_links_by_category_page(category, soup)
 
     html = str(soup)
 
@@ -93,7 +91,6 @@ def clean_cell(cell: Tag):
         return ";".join(lst)
 
     # в остальных случаях
-    # TODO: доработать обработку
     return clean_text(cell.text)
 
 

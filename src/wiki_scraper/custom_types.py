@@ -48,3 +48,12 @@ class Vehicle(TypedDict):
     weight: Optional[float]
     # json строка данных из infobox
     json: str
+
+
+class PageData(TypedDict):
+    url: str
+    title: str
+    filepath: str
+    category: str
+    links: List[str]
+    html: str

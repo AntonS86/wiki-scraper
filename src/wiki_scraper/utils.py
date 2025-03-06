@@ -2,42 +2,50 @@ import re
 from typing import List
 from urllib.parse import urljoin
 
+from bs4 import BeautifulSoup, Tag
+
 from wiki_scraper.custom_types import Engine, Transmission
 from wiki_scraper.data.countries import countries
 from wiki_scraper.data.transmissions import transmissions
+
+# базовый url википедии
+WIKI_BASE_URL = "https://en.wikipedia.org/wiki/"
 
 
 # очищаем url от параметров
 # https://en.wikipedia.org/wiki/Toyota_Camry#V30_(1990%E2%80%931994) ->
 #  Toyota_Camry
-def clean_wiki_url(url):
+def clean_wiki_url(url: str) -> str:
     return url.split("/")[-1].split("#")[0].split("?")[0]
 
 
 # преобразуем url в путь к файлу
 # https://en.wikipedia.org/wiki/Toyota_Camry#V30_(1990%E2%80%931994)
 # -> Toyota_Camry.html
-def url_to_filepath(url):
+def url_to_filepath(url: str) -> str:
     return clean_wiki_url(url) + ".html"
+
+
+def find_canonical_url(text: str) -> str | None:
+    """Поиск канонического url на странице"""
+    soup = BeautifulSoup(text, "html.parser")
+    canonical = soup.find("link", {"rel": "canonical"})
+    if isinstance(canonical, Tag):
+        href = canonical.get("href")
+        if isinstance(href, str):
+            return urljoin(WIKI_BASE_URL, clean_wiki_url(href))
+    return None
 
 
 # шаблоны для классификации по категориям
 patterns = {
-    "list_of_vehicles_manufacturers1": re.compile(
-        r"List_of_(?:the_)?[-\w]*?(automobile_manufacturers|car_brands|vehicles|automobiles|cars)"
-    ),
-    "list_of_vehicles_manufacturers2": re.compile(
-        r"^List_of_(?:car|defunct_car|automobile|defunct_automobile)_manufacturers_(?:of|in|by)_(?:the_)?[-\w]+?$"
-    ),
-    "list_of_vehicles_industry1": re.compile(r"^Automotive_industry_(?:of|in|by)_(?:the_)?[-\w]+?$"),
-    "list_of_vehicles_sales1": re.compile(
-        r"^List_of_(?:automobile|truck|bus|motorcycle|scooter|bicycle)_sales_(?:of|in|by)_(?:the_)?[-\w]+?$"
-    ),
+    "list_of_automobile_manufacturers": re.compile(r"^List_of_automobile_manufacturers$"),
+    "list_of_company_vehicle": re.compile(r"^List_of(?:_[A-Za-z-]+)+_(?:vehicles|cars)$"),
 }
 
 
 # классифицируем страницу по url
-def classify_page_by_url(url):
+def classify_page_by_url(url: str) -> str | None:
     for category, pattern in patterns.items():
         if pattern.match(url):
             return category
@@ -46,89 +54,73 @@ def classify_page_by_url(url):
 
 # ключевые слова для классификации по содержимому
 content_keywords = {
-    "company": [
+    "company": {
         "company type",
         "industry",
         "founded",
-        "founder",
         "headquarters",
-        "employees",
-        "subsidiaries",
-    ],
-    "car": [
+    },
+    "vehicle": {
         "manufacturer",
         "production",
-        "model years",
+        "model code",
+        "class",
+        "assembly",
         "body style",
+        "layout",
         "engine",
-        "power output",
         "transmission",
-    ],
+        "wheelbase",
+    },
 }
 
 
-# классифицируем страницу по содержимому
-def classify_page_by_content(soup):
-    # Ищем все инфобоксы на странице
-    infoboxes = soup.find_all("table", class_="infobox")
+def classify_page_by_content(soup: Tag):
+    """
+    Классификация страницы по содержимому
+    """
+    th_list = {th.get_text().lower() for th in soup.select(".infobox th")}  # Используем set для быстрого поиска
 
-    for infobox in infoboxes:
-        # Получаем текст инфобокса и приводим его к нижнему регистру
-        text = infobox.get_text().lower()
+    # Находим пересечение ключевых слов
+    best_match = None
+    max_score = 0
 
-        # Проверяем наличие ключевых слов для каждой категории
-        for category, keywords in content_keywords.items():
-            if any(keyword in text for keyword in keywords):
-                return category
+    for category, keywords in content_keywords.items():
+        score = len(th_list & keywords)  # Количество совпадений
+        if score > max_score:  # Запоминаем наилучшую категорию
+            max_score = score
+            best_match = category
 
-    return None
+    return best_match if max_score > 3 else None
 
 
-def classify_page(url, soup):
+def classify_page(url: str, soup: Tag) -> str:
     url_category = classify_page_by_url(url)
     content_category = classify_page_by_content(soup)
     return url_category or content_category or "unknown"
 
 
-# базовый url википедии
-WIKI_BASE_URL = "https://en.wikipedia.org/wiki/"
-
 # шаблоны для обработки ссылок
-file_pattern = re.compile(r"\.(jpg|png|pdf|jpeg|gif)(\?.*)?(#.*)?$")
-exclude_links_pattern = re.compile(
-    r"/Special:|/Talk:|/Wikipedia:|/Help:|/Template:|/Template_talk:|/File:|/Main_Page|/Portal:|/Category"
+file_href_pattern = re.compile(r"\.(jpg|png|pdf|jpeg|gif)(\?.*)?(#.*)?$")
+exclude_href_pattern = re.compile(
+    r"/Special:|/Talk:|/Wikipedia:|/Help:|/Template:|/Template_talk:|/File:|/Main_Page|/Portal:|/Category|/MOS:|/Aurion:"  # noqa E501
 )
 
-
-# Собираем ссылки только внутри Википедии и очишаем их от параметров
-def get_wiki_links(soup):
-    s = set()
-    links = soup.select("a[href^='/wiki/']")
-    for link in links:
-        href = link.get("href")
-        if href and not file_pattern.search(href) and not exclude_links_pattern.search(href):
-            full_url = urljoin(WIKI_BASE_URL, clean_wiki_url(href))
-            s.add(full_url)
-    return s
-
-
 # исключаемые теги и классы
-excluded_tags = [
-    "script",
-    "style",
-    "noscript",
-    "iframe",
-    "img",
-    "meta",
-    "nav",
-    "link",
-]
+excluded_tags = ["script", "style", "iframe", "svg", "form", "input", "button"]
 exluded_classes = [
-    "reflist",
+    "sidebar",  # Боковые панели
+    "nav",
+    "footer",
+    "ad",
+    "ads",
+    "banner",
+    "social",
+    "breadcrumb",
+    "cookie" "reflist",
     "references",
     "citation",
     "mw-references-wrap",  # Источники
-    "sidebar",  # Боковые панели
     "vector-header-container",
     "wm-header",  # Заголовок
     "mw-editsection",
@@ -136,25 +128,146 @@ exluded_classes = [
     "external",
     "thumb",  # Внешние ссылки и изображения
     "mw-portlet",  # различные элементы внутри контента
-    "vector-column-start",
-    "vector-column-end",
-    "vector-page-toolbar",
-    "mw-footer-container",
-    "vector-body-before-content",
-    "vector-settings",
 ]
 
 
-# Удаляем ненужные теги и элименты с классы для уменьшения размера html
-def clean_html(soup):
+# Удаляем ненужные теги и элементы с классы для уменьшения размера html
+def clean_html(soup: Tag) -> Tag:
     for tag in soup(excluded_tags):
         tag.decompose()
+
+    # удаление ссылок над строками
+    links = soup.find_all("sup", class_="reference")
+    for link in links:
+        link.decompose()
 
     for class_name in exluded_classes:
         for tag in soup.find_all(class_=class_name):
             tag.decompose()
 
     return soup
+
+
+# ------------------ поиск ссылок на странице ------------------
+# паттерн ссылки любые списки на на странице
+list_of_href_pattern = re.compile(r"/Lists?_of")
+
+
+def find_link_for_table(soup: Tag) -> set[str]:
+    """Поиск ссылок в таблицах в низу страницы"""
+    urls: set[str] = set()
+    # ключевые слова для поиска ссылок
+    key_words = ["cars", "models", "vehicles", "trucks", "vans", "suvs"]
+    trs = soup.select("table.navbox-inner tr")
+    for tr in trs:
+        th = tr.find("th")
+        if th:
+            text = th.get_text(" ", strip=True).lower()
+            if any(word in text for word in key_words):
+                links = tr.select("a[href^='/wiki/']")
+                for link in links:
+                    href = link.get("href")
+                    if (
+                        isinstance(href, str)
+                        and not file_href_pattern.search(href)
+                        and not exclude_href_pattern.search(href)
+                    ):
+                        full_url = urljoin(WIKI_BASE_URL, clean_wiki_url(href))
+                        urls.add(full_url)
+    return urls
+
+
+def find_links_by_list_of_automobile_manufacturers(soup: Tag) -> list[str]:
+    """Поиск ссылок на страницы с производителями автомобилей"""
+    urls: set[str] = set()
+    links = soup.select("#bodyContent ul li a[href^='/wiki/']")
+    for link in links:
+        href = link.get("href")
+        if (
+            isinstance(href, str)
+            and not file_href_pattern.search(href)
+            and not exclude_href_pattern.search(href)
+            and not list_of_href_pattern.search(href)
+        ):
+            full_url = urljoin(WIKI_BASE_URL, clean_wiki_url(href))
+            urls.add(full_url)
+    return list(urls)
+
+
+def find_links_by_list_of_company_vehicle(soup: Tag) -> list[str]:
+    """Поиск ссылок на страницы с автомобилями компаний"""
+    urls: set[str] = set()
+    links = soup.select("#bodyContent table.wikitable th a[href^='/wiki/'], #bodyContent ul li a[href^='/wiki/']")
+    for link in links:
+        href = link.get("href")
+        if (
+            isinstance(href, str)
+            and not file_href_pattern.search(href)
+            and not exclude_href_pattern.search(href)
+            and not list_of_href_pattern.search(href)
+        ):
+            full_url = urljoin(WIKI_BASE_URL, clean_wiki_url(href))
+            urls.add(full_url)
+    return list(urls)
+
+
+def find_links_by_vehicle(soup: Tag) -> list[str]:
+    """Поиск ссылок на страницы с автомобилями"""
+    urls: set[str] = set()
+    links: list[Tag] = list()
+
+    # поиск ссылок в колонках infobox
+    trs = soup.select(".infobox tr")
+    for tr in trs:
+        th = tr.find("th")
+        if th is not None and th.get_text(strip=True).lower() in ["predecessor", "successor", "related"]:
+            links += tr.select("td a[href^='/wiki/']")
+
+    # поиск ссылок в тексте, main article, see also
+    links += soup.select("#bodyContent .hatnote a[href^='/wiki/']")
+
+    for link in links:
+        href = link.get("href")
+        if isinstance(href, str) and not file_href_pattern.search(href) and not exclude_href_pattern.search(href):
+            full_url = urljoin(WIKI_BASE_URL, clean_wiki_url(href))
+            urls.add(full_url)
+    # объединяем ссылки из таблиц и текста
+    urls |= find_link_for_table(soup)
+    return list(urls)
+
+
+list_of_vehicles_pattern = re.compile(r"^/wiki/List_of(?:_[A-Za-z-]+)+_(?:vehicles|cars)$")
+
+
+def find_links_by_company(soup: Tag) -> list[str]:
+    """Поиск ссылок на страницы с компаниями"""
+    urls: set[str] = set()
+    links = soup.select("#bodyContent a[href^='/wiki/']")
+    for link in links:
+        href = link.get("href")
+        if isinstance(href, str) and list_of_vehicles_pattern.search(href):
+            full_url = urljoin(WIKI_BASE_URL, clean_wiki_url(href))
+            urls.add(full_url)
+
+    # объединяем ссылки из таблиц и текста
+    urls |= find_link_for_table(soup)
+    return list(urls)
+
+
+def find_links_by_category_page(category: str, soup: Tag) -> list[str]:
+    """Поиск ссылок на страницы по категориям страницы"""
+    if category == "list_of_automobile_manufacturers":
+        return find_links_by_list_of_automobile_manufacturers(soup)
+    if category == "list_of_company_vehicle":
+        return find_links_by_list_of_company_vehicle(soup)
+    if category == "vehicle":
+        return find_links_by_vehicle(soup)
+    if category == "company":
+        return find_links_by_company(soup)
+    return []
+
+
+# ------------------ парсинг данных из инфобокса ------------------
 
 
 def str_to_column_name(str):
