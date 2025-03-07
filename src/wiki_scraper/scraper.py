@@ -67,8 +67,12 @@ def clean_text(text: str, default="N/A"):
     """
     if text is None:
         return default
-    cleaned_text = text.replace("\xa0", " ").replace(";", ",").strip()
-    return cleaned_text if cleaned_text else default
+    replacements = {"\xa0": " ", "\u2013": "-", "\u2014": "-", ";": ","}
+
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    text = text.strip()
+    return text if text else default
 
 
 def clean_cell(cell: Tag):
@@ -78,7 +82,7 @@ def clean_cell(cell: Tag):
     # поиск списков
     lis = cell.find_all("li")
     if len(lis) > 0:
-        lst = [clean_text(li.text) for li in lis]
+        lst = [clean_text(li.get_text(" ", strip=True)) for li in lis]
         return ";".join(lst)
 
     # поиск списков с разделителями <br>
@@ -87,11 +91,11 @@ def clean_cell(cell: Tag):
         # замена <br> на строковый разделитель
         for br in brs:
             br.replace_with(NavigableString("#br#"))
-        lst = [clean_text(li) for li in cell.get_text(strip=True).split("#br#")]
+        lst = [clean_text(li) for li in cell.get_text(" ", strip=True).split("#br#")]
         return ";".join(lst)
 
     # в остальных случаях
-    return clean_text(cell.text)
+    return clean_text(cell.get_text(" ", strip=True))
 
 
 def parse_vehicle_page(url, response_text):

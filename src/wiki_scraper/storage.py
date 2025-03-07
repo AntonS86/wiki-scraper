@@ -282,7 +282,7 @@ def get_car_pages_generator(batch_size=1000):
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             while True:
-                cursor.execute("SELECT * FROM pages WHERE category = 'car' LIMIT ? OFFSET ?", (batch_size, offset))
+                cursor.execute("SELECT * FROM pages WHERE category = 'vehicle' LIMIT ? OFFSET ?", (batch_size, offset))
                 rows = cursor.fetchall()
                 # Если строк больше нет — выходим
                 if not rows:

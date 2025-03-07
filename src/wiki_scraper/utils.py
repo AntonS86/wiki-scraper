@@ -289,25 +289,32 @@ def create_model_name(page_title, infobox_title):
 
 
 # шаблон для поиска годов производства
-years_pattern = re.compile(r"\d{4}")
+years_pattern = re.compile(r"\b(?:[A-Za-z]+ )?(\d{4})\s*-\s*(?:[A-Za-z]+ )?(\d{4}|present|current)\b", re.IGNORECASE)
 
 
-def parse_years_range(years_str: str | None):
+def parse_years_range(years_str: str | None) -> tuple[int | None, int | None]:
     """
     Извлекает минимальный и максимальный год производства из строки.
-    Если указан 'present', максимальный год становится None.
     """
     if years_str is None:
         return None, None
 
-    years = years_pattern.findall(years_str)  # Находим все 4-значные числа (года)
-
+    years = years_pattern.findall(years_str)
     if not years:
-        return None, None  # Если годов нет, вернуть None
+        return None, None
 
-    years = list(map(int, years))  # Преобразуем года в числа
-    min_year = min(years)  # Самый ранний год
-    max_year = max(years) if "present" not in years_str else None  # Самый поздний или None
+    # Преобразуем года в числа, обрабатывая 'present' как None
+    parsed_years = [(int(start), None if end.lower() in ["present", "current"] else int(end)) for start, end in years]
+
+    # Находим минимальный начальный год
+    min_year = min(start for start, _ in parsed_years)
+
+    # Если хотя бы один диапазон заканчивается на None (present),
+    # значит производство все еще идет
+    if any(end is None for _, end in parsed_years):
+        max_year = None
+    else:
+        max_year = max(end for _, end in parsed_years if end is not None)
 
     return min_year, max_year
 
