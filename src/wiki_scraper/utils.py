@@ -448,8 +448,9 @@ def parse_electric_engine(text: str | None) -> List[Engine]:
     return l_engine
 
 
-speed_pattern = re.compile(r"\b(\d+)(?:-| )(?:speed|gear)\b")
-transmisison_patern = re.compile(
+speed_group_pattern = re.compile(r"\b(\d+(?:[ -]*(?:/|or) ?\d+)*?)[ -]*(?:speed|spd|gear)\b")
+speed_pattern = re.compile(r"\d+")
+transmission_pattern = re.compile(
     r"\b(ecvt|cvt|dct|amt|smt|at|mt|ev|dsg|hst|hydrostatic|direct|electric|dual|continuously|tiptronic|sequential|manual|automatic|automated)\b"  # noqa E501
 )
 
@@ -469,15 +470,22 @@ def parse_transmission(text: str | None) -> List[Transmission]:
             "speed": None,
         }
 
-        speed_match = speed_pattern.search(el)
-        if speed_match:
-            transmission["speed"] = int(speed_match.group(1))
-
-        type_match = transmisison_patern.search(el)
+        type_match = transmission_pattern.search(el)
         if type_match:
             transmission["type"] = transmissions.get(type_match.group(1))
 
-        l_transmission.append(transmission)
+        # поиск количества скоростей, при паттерне 3/4-speed
+        # создаем объект на каждую скорость
+        speed_match = speed_group_pattern.search(el)
+        if speed_match:
+            speed_group = speed_match.group(1)
+            list_num = speed_pattern.findall(speed_group)
+            for el in list_num:
+                t: Transmission = {**transmission, "speed": int(el)}
+                l_transmission.append(t)
+        else:
+            l_transmission.append(transmission)
+
     return l_transmission
 
 
