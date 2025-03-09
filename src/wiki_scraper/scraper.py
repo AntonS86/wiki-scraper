@@ -22,6 +22,7 @@ from wiki_scraper.utils import (
     parse_meters,
     parse_transmission,
     parse_years_range,
+    remove_diacritics,
     str_to_column_name,
     url_to_filepath,
 )
@@ -71,7 +72,7 @@ def clean_text(text: str, default="N/A"):
 
     for old, new in replacements.items():
         text = text.replace(old, new)
-    text = text.strip()
+    text = remove_diacritics(text).strip()
     return text if text else default
 
 

@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from typing import List
 from urllib.parse import urljoin
 
@@ -270,6 +271,15 @@ def find_links_by_category_page(category: str, soup: Tag) -> list[str]:
 # ------------------ парсинг данных из инфобокса ------------------
 
 
+def remove_diacritics(text: str) -> str:
+    """Удаляет диакритические знаки из текста"""
+    # Нормализуем строку в форму NFKD
+    normalized_text = unicodedata.normalize("NFKD", text)
+    # Убираем символы, которые являются диакритическими знаками
+    cleaned_text = "".join(char for char in normalized_text if not unicodedata.combining(char))
+    return cleaned_text
+
+
 def str_to_column_name(str):
     """преобразуем строку в имя колонки"""
     return str.lower().replace(" ", "_")
@@ -470,7 +480,13 @@ def parse_transmission(text: str | None) -> List[Transmission]:
     return l_transmission
 
 
-class_sub_patern = re.compile(r"\s*\((?![A-Z]\b)[^)]*\)")
+# паттерны для поиска двойного разделителя
+double_delimiter_pattern = re.compile(r";;")
+
+# паттерны для замены разделителей
+class_delimiter_pattern = re.compile(r"\s*(?:[,/]|and)\s*")
+
+class_sub_pattern = re.compile(r"\s*\((?![A-Z]\b)[^)]*\)")
 
 
 def parse_class(text: str | None) -> str | None:
@@ -479,10 +495,15 @@ def parse_class(text: str | None) -> str | None:
     """
     if text is None:
         return None
-    return class_sub_patern.sub("", text).strip()
+    text = class_sub_pattern.sub("", text)
+    text = class_delimiter_pattern.sub(";", text)
+    text = double_delimiter_pattern.sub(";", text)
+    return text.lower().strip()
 
 
-body_style_sub_patern = re.compile(r"\s*\([^)]*\)")
+body_minus_pattern = re.compile(r"-(?=/)")
+body_delimiter_pattern = re.compile(r"(?<=[^\d])\s*(?:[,/]|and)\s*")
+body_style_sub_pattern = re.compile(r"\s*\([^)]*\)")
 
 
 def parse_body_style(text: str | None) -> str | None:
@@ -491,7 +512,11 @@ def parse_body_style(text: str | None) -> str | None:
     """
     if text is None:
         return None
-    return body_style_sub_patern.sub("", text).strip()
+    text = body_style_sub_pattern.sub("", text)
+    text = body_minus_pattern.sub("", text)
+    text = body_delimiter_pattern.sub(";", text)
+    text = double_delimiter_pattern.sub(";", text)
+    return text.lower().strip()
 
 
 def layout_parse(text: str | None) -> str | None:
