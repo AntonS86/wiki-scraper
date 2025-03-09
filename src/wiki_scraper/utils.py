@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup, Tag
 
 from wiki_scraper.custom_types import Engine, Transmission
 from wiki_scraper.data.countries import countries
+from wiki_scraper.data.fuel_types import fuel_types
 from wiki_scraper.data.transmissions import transmissions
 
 # базовый url википедии
@@ -359,7 +360,7 @@ def parse_manufacturer_company(text: str | None) -> List[str]:
 
 volume_l_pattern = re.compile(r"\b(\d+(?:\.\d+)?) ?l\b")
 volume_cc_pattern = re.compile(r"\b(\d+(?:,\d+)?) ?cc\b")
-fuel_type_patern = re.compile(r"(?:hybrid )?(?:gasoline|petrol|diesel|electric)(?: hybrid)?")
+fuel_type_pattern = re.compile(r"(?:hybrid )?(?:gasoline|petrol|diesel|electric)(?: hybrid)?")
 power_pattern = re.compile(r"\b(\d+(?:\.\d+)?)\s?(?:hp|horsepower)\b")
 
 
@@ -378,24 +379,24 @@ def parse_engine(text: str | None) -> List[Engine]:
         engine: Engine = {
             "text": el,
             "volume": None,
-            "type_fuel": "gasoline",
+            "type_fuel": fuel_types.get("petrol"),
             "power": None,
         }
         # поиск объема двигателя
         volume: float | None = None
-        volume_match = volume_l_pattern.search(el)
-        if volume_match:
-            volume = float(volume_match.group(1))
+        cc_match = volume_cc_pattern.search(el)
+        if cc_match:
+            volume = round(float(cc_match.group(1).replace(",", "")) / 1000, 1)
         else:
-            cc_match = volume_cc_pattern.search(el)
-            if cc_match:
-                volume = round(float(cc_match.group(1).replace(",", "")) / 1000, 1)
+            volume_match = volume_l_pattern.search(el)
+            if volume_match:
+                volume = float(volume_match.group(1))
         engine["volume"] = volume
 
         # поиск типа топлива
-        fuel_match = fuel_type_patern.search(el)
+        fuel_match = fuel_type_pattern.search(el)
         if fuel_match:
-            engine["type_fuel"] = fuel_match.group()
+            engine["type_fuel"] = fuel_types.get(fuel_match.group())
         else:
             if i != 0:
                 engine["type_fuel"] = l_engine[i - 1].get("type_fuel")
@@ -424,7 +425,7 @@ def parse_electric_engine(text: str | None) -> List[Engine]:
         engine: Engine = {
             "text": el,
             "volume": None,
-            "type_fuel": "electric",
+            "type_fuel": fuel_types.get("electric"),
             "power": None,
         }
         # поиск объема двигателя
