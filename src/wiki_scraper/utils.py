@@ -5,9 +5,11 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, Tag
 
-from wiki_scraper.custom_types import Engine, Transmission
+from wiki_scraper.custom_types import Engine, ListClassifyPattern, Transmission
+from wiki_scraper.data.body_style_patterns import body_style_patterns
 from wiki_scraper.data.countries import countries
 from wiki_scraper.data.fuel_types import fuel_types
+from wiki_scraper.data.layout_patterns import classify_layout
 from wiki_scraper.data.transmissions import transmissions
 
 # базовый url википедии
@@ -272,6 +274,25 @@ def find_links_by_category_page(category: str, soup: Tag) -> list[str]:
 # ------------------ парсинг данных из инфобокса ------------------
 
 
+def classify(text: str, body_classes: ListClassifyPattern) -> str:
+    """
+    Классифицирует текст на основе заданных категорий.
+    """
+    text_words = set(text.split())  # Разбиваем текст на слова
+    best_match = "unknown"
+    best_score = 0
+
+    for category in body_classes:
+        words = set(category["words"])  # Преобразуем слова категории в множество
+        score = len(words & text_words)  # Считаем количество совпадений
+
+        if score > best_score:  # Если нашли категорию с большим совпадением
+            best_match = category["category"]
+            best_score = score
+
+    return best_match
+
+
 def remove_diacritics(text: str) -> str:
     """Удаляет диакритические знаки из текста"""
     # Нормализуем строку в форму NFKD
@@ -511,8 +532,13 @@ def parse_class(text: str | None) -> str | None:
 
 
 body_minus_pattern = re.compile(r"-(?=/)")
-body_delimiter_pattern = re.compile(r"(?<=[^\d])\s*(?:[,/]|and)\s*")
+body_delimiter_pattern = re.compile(r"(?<=[^\d])\s*(?:[,/]|and|or)\s*")
+# поиск данных в скобках
 body_style_sub_pattern = re.compile(r"\s*\([^)]*\)")
+# поиск не словесных символов
+not_word_char_pattern = re.compile(r"[^\w]")
+# поиск двойных пробелов
+group_space_pattern = re.compile(r"\s{2,}")
 
 
 def parse_body_style(text: str | None) -> str | None:
@@ -521,18 +547,28 @@ def parse_body_style(text: str | None) -> str | None:
     """
     if text is None:
         return None
-    text = body_style_sub_pattern.sub("", text)
-    text = body_minus_pattern.sub("", text)
-    text = body_delimiter_pattern.sub(";", text)
-    text = double_delimiter_pattern.sub(";", text)
-    return text.lower().strip()
+    cats: set[str] = set()
+    for part in text.split(";"):
+        part = part.lower().strip()
+        # заменяем не словесные символы пробелами
+        part = not_word_char_pattern.sub(" ", part)
+        # удаляем лишние пробелы
+        part = group_space_pattern.sub(" ", part)
+        cats.add(classify(part, body_style_patterns))
+    return ";".join(cats)
 
 
 def layout_parse(text: str | None) -> str | None:
     """
     Парсит информацию о расположении двигателя из текста
     """
-    return parse_body_style(text)
+    if text is None:
+        return None
+    text = double_delimiter_pattern.sub(";", text)
+    cats: set[str] = set()
+    for part in text.split(";"):
+        cats |= classify_layout(part)
+    return ";".join(cats)
 
 
 millimeters_pattern = re.compile(r"\b(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s?mm\b")

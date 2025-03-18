@@ -57,3 +57,11 @@ class PageData(TypedDict):
     category: str
     links: List[str]
     html: str
+
+
+class ClassifyPattern(TypedDict):
+    words: list[str]
+    category: str
+
+
+ListClassifyPattern = List[ClassifyPattern]

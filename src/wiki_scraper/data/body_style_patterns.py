@@ -1,0 +1,72 @@
+from wiki_scraper.custom_types import ListClassifyPattern
+
+body_style_patterns: ListClassifyPattern = [
+    {"words": ["hearse"], "category": "hearse"},
+    {"words": ["conventional"], "category": "conventional"},
+    {"words": ["landaulet", "landau"], "category": "landaulet"},
+    {"words": ["limousine"], "category": "limousine"},
+    {"words": ["phaeton"], "category": "phaeton"},
+    {"words": ["roadster"], "category": "roadster"},
+    {"words": ["runabout"], "category": "runabout"},
+    {"words": ["torpedo"], "category": "torpedo"},
+    {"words": ["touring"], "category": "torpedo"},
+    {"words": ["minibus"], "category": "minibus"},
+    {"words": ["campervan"], "category": "campervan"},
+    {"words": ["buggy"], "category": "buggy"},
+    {"words": ["baquet"], "category": "baquet"},
+    {"words": ["barchetta"], "category": "barchetta"},
+    {"words": ["berlinetta"], "category": "berlinetta"},
+    {"words": ["torpedo", "tourer"], "category": "torpedo"},
+    # bus
+    {"words": ["bus"], "category": "bus"},
+    # van
+    {"words": ["van"], "category": "van"},
+    {"words": ["microvan"], "category": "microvan"},
+    {"words": ["minivan", "mpv"], "category": "minivan"},
+    {"words": ["panel", "delivery", "blind", "van"], "category": "panel van"},
+    {"words": ["estate", "station", "wagon", "avant"], "category": "station wagon"},
+    # truck
+    {"words": ["truck"], "category": "truck"},
+    {"words": ["panel", "truck"], "category": "panel truck"},
+    {"words": ["box", "truck"], "category": "box truck"},
+    {"words": ["town", "truck"], "category": "town truck"},
+    {"words": ["recovery", "vehicle"], "category": "town truck"},
+    {"words": ["flatbed", "flat", "bed"], "category": "flatbed truck"},
+    # pickup
+    {"words": ["pickup", "truck"], "category": "pickup truck"},
+    # cab
+    {"words": ["crew", "cab"], "category": "crew cab"},
+    {"words": ["standard", "cab"], "category": "standard cab"},
+    {"words": ["extended", "cab"], "category": "extended cab"},
+    {"words": ["regular", "cab"], "category": "regular cab"},
+    {"words": ["chassis", "cab"], "category": "chassis cab"},
+    {"words": ["roadster", "utility"], "category": "roadster utility"},
+    {"words": ["targa", "top"], "category": "targa top"},
+    {"words": ["cabriolet", "convertible", "soft top"], "category": "convertible"},
+    # sedan
+    {"words": ["sedan", "saloon"], "category": "sedan"},
+    {"words": ["fastback", "avant", "sedan"], "category": "fastback sedan"},
+    {"words": ["hardtop", "sedan"], "category": "hardtop sedan"},
+    {"words": ["hatchback", "liftback", "sedan"], "category": "hatchback sedan"},
+    {"words": ["notchback", "sedan"], "category": "notchback sedan"},
+    # coupe
+    {"words": ["coupe"], "category": "coupe"},
+    {"words": ["fastback", "coupe"], "category": "fastback coupe"},
+    {"words": ["hatchback", "liftback", "coupe"], "category": "hatchback coupe"},
+    {"words": ["hardtop", "coupe"], "category": "hardtop coupe"},
+    {"words": ["drophead", "coupe"], "category": "drophead coupe"},
+    {"words": ["notchback", "coupe"], "category": "notchback coupe"},
+    {"words": ["coupe", "utilitye"], "category": "coupe utility"},
+    {"words": ["ute"], "category": "coupe utility"},
+    # suv
+    {"words": ["suv", "sport", "utility", "crossover"], "category": "suv"},
+    {"words": ["coupe", "suv"], "category": "coupe suv"},
+    {"words": ["cuv"], "category": "cuv"},
+    {"words": ["shooting", "brake"], "category": "shooting-brake"},
+    {"words": ["cabrio", "coach"], "category": "cabrio coach"},
+    # town car
+    {"words": ["coupe", "de", "ville"], "category": "town car"},
+    {"words": ["sedanca", "de", "ville"], "category": "town car"},
+    {"words": ["town", "car"], "category": "town car"},
+    {"words": ["troop", "carrier"], "category": "troop carrier"},
+]
