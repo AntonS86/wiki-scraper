@@ -13,6 +13,7 @@ load_dotenv(BASE_DIR / ".env")
 DB_PATH = BASE_DIR / os.getenv("DB_PATH", "/db")
 LOGS_PATH = BASE_DIR / os.getenv("LOGS_PATH", "/logs")
 HTML_PATH = BASE_DIR / os.getenv("HTML_PATH", "/html")
+CSV_PATH = BASE_DIR / os.getenv("CSV_PATH", "/csv")
 
 LOG_FILE = LOGS_PATH / "wikicrawler.log"
 DB_FILE = DB_PATH / "wikipedia.db"
@@ -24,3 +25,4 @@ if __name__ == "__main__":  # Тестирование при запуске con
     print(f"HTML: {HTML_PATH}")
     print(f"LOG_FILE: {LOG_FILE}")
     print(f"DB_FILE: {DB_FILE}")
+    print(f"csv: {CSV_PATH}")

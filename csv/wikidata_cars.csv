@@ -1,0 +1,6 @@
+car,carLabel,brandLabel,manufacturerLabel,inception_year,start_year,end_year,production_year,discontinued_year,wheelbaseLabel,lengthLabel,heightLabel,widthLabel,massLabel,subclassLabel,engineLabel,engineClassLabel,engineSubclassLabel,modelSeriesLabel,modelSeriesStartYear,modelSeriesEndYear,wikipediaArticle
+http://www.wikidata.org/entity/Q1483444,Toyota Corolla Verso,Toyota,Toyota,,1997,2009,,,,4135,,,,compact MPV,,,,,,,https://en.wikipedia.org/wiki/Toyota_Corolla_Verso
+http://www.wikidata.org/entity/Q1538045,Toyota Corolla Rumion,Toyota,Toyota,,2007,,,,2600,4210,,1760,,compact car,,,,,,,https://en.wikipedia.org/wiki/Toyota_Corolla_Rumion
+http://www.wikidata.org/entity/Q1256040,Toyota Sienta,Toyota,Toyota,,,,,,,,,,,mini MPV,Toyota M15A-FKS engine,gasoline engine,engine model,,,,https://en.wikipedia.org/wiki/Toyota_Sienta
+http://www.wikidata.org/entity/Q1256040,Toyota Sienta,Toyota,Toyota,,,,,,,,,,,mini MPV,Toyota ZR engine,gasoline engine,gasoline engine,,,,https://en.wikipedia.org/wiki/Toyota_Sienta
+http://www.wikidata.org/entity/Q1256040,Toyota Sienta,Toyota,Toyota,,,,,,,,,,,mini MPV,Toyota NR engine,gasoline engine,engine family,,,,https://en.wikipedia.org/wiki/Toyota_Sienta
