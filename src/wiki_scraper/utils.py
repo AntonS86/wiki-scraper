@@ -16,6 +16,13 @@ from wiki_scraper.data.transmissions import transmissions
 WIKI_BASE_URL = "https://en.wikipedia.org/wiki/"
 
 
+def clean_url(url: str) -> str:
+    """
+    Очищает ссылку от параметров # и ?
+    """
+    return url.split("#")[0].split("?")[0]
+
+
 # очищаем url от параметров
 # https://en.wikipedia.org/wiki/Toyota_Camry#V30_(1990%E2%80%931994) ->
 #  Toyota_Camry

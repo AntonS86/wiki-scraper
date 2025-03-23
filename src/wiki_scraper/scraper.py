@@ -10,7 +10,6 @@ from wiki_scraper.utils import (
     clean_html,
     clean_wiki_url,
     create_model_name,
-    find_links_by_category_page,
     layout_parse,
     parse_assembly_countries,
     parse_body_style,
@@ -45,9 +44,6 @@ def parse_wikipedia_page(url, response_text):
     # классификация по содержимому
     category = classify_page(clean_wiki_url(url), soup)
 
-    # получаем ссылки на страницы внутри википедии
-    links = find_links_by_category_page(category, soup)
-
     html = str(soup)
 
     return {
@@ -56,7 +52,6 @@ def parse_wikipedia_page(url, response_text):
         "category": category,
         "filepath": filepath,
         "html": html,
-        "links": links,
     }
 
 

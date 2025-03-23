@@ -7,9 +7,11 @@ import requests
 from wiki_scraper.config import HTML_PATH
 from wiki_scraper.logger import logger
 from wiki_scraper.scraper import parse_vehicle_page, parse_wikipedia_page
+from wiki_scraper.sparql_dataset import endpoint_url, get_results
 from wiki_scraper.storage import (
     add_new_links_to_queue,
     add_vehicle,
+    clear_page_tables,
     get_car_pages_generator,
     get_next_url,
     increment_parsed_count,
@@ -17,9 +19,40 @@ from wiki_scraper.storage import (
     mark_as_visited,
     save_page,
 )
-from wiki_scraper.utils import find_canonical_url
+from wiki_scraper.utils import clean_url, find_canonical_url
 
 WIKI_BASE_URL = "https://en.wikipedia.org/wiki/"
+
+
+def create_queue_links():
+    query = """
+        SELECT ?car ?carLabel
+        ?wikipediaArticle
+        WHERE {
+            # Ищем элементы, которые являются экземплярами или подклассами "автомобиля" (Q3231690)
+            ?car (wdt:P31/(wdt:P279*)) wd:Q3231690.
+            # Опционально получаем ссылку на статью в Wikipedia
+            ?wikipediaArticle schema:about ?car.
+            ?wikipediaArticle schema:isPartOf <https://en.wikipedia.org/>.
+            # Добавляем метки на английском языке
+            SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+        }
+        ORDER BY ASC(?carLabel)
+    """
+    # Очищаем данные из таблиц относящихся к скачиванию html, очередь и посещенные
+    clear_page_tables()
+    results = get_results(endpoint_url, query)
+
+    links: list[str] = []
+    if isinstance(results, dict):
+        for result in results.get("results", {}).get("bindings", []):
+            link = result.get("wikipediaArticle", {}).get("value", None)
+            if link:
+                links.append(clean_url(link))
+
+    if not links:
+        logger.error("Sparql вернул пустой массив ссылок. 41177ed8-eaf4-45a6-8641-8eeb7e53fc58")
+    add_new_links_to_queue(links)
 
 
 # Сохраняет HTML содержимое страницы в файл
@@ -98,11 +131,6 @@ def crawl_wikipedia(MAX_PAGES=100):
 
             # сохраняем HTML в файл
             save_html_to_file(page_data)
-
-            # если мы смогли классифицировать страницу, то добавляем новые ссылки в очередь
-            if not page_data["category"] == "unknown":
-                # добавляем новые ссылки в очередь, только не посещенные
-                add_new_links_to_queue([link for link in page_data["links"] if not is_visited(link)])
 
             # добавляем в посещенные только после
             # успешного сохранения в БД и файл

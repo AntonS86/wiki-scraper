@@ -1,28 +1,28 @@
-from wiki_scraper.crawler import crawl_vehicle_pages, crawl_wikipedia
+from wiki_scraper.crawler import (
+    crawl_vehicle_pages,
+    crawl_wikipedia,
+    create_queue_links,
+)
 from wiki_scraper.logger import logger
-from wiki_scraper.storage import add_to_queue, init_db
+from wiki_scraper.storage import clear_vehicles_tables, init_db
 
-ROOT_URL = "https://en.wikipedia.org/wiki/List_of_automobile_manufacturers"
+# ROOT_URL = "https://en.wikipedia.org/wiki/List_of_automobile_manufacturers"
 
 if __name__ == "__main__":
     try:
         logger.info("Запуск программы")
         # инициализируем базу данных
         init_db()
-        logger.info("Запуск скачивания страниц")
-        # добавляем в очередь начальную страницу
-        add_to_queue(ROOT_URL, priority=1)
-        # добавил списки авто для ускорения парсинга
-        # add_new_links_to_queue(
-        #     [
-        #         "https://en.wikipedia.org/wiki/Toyota_Corolla_(E10)",
-        #     ]
-        # )
         logger.info("Поиск и скачивание страниц с транспортными средствами")
+        # добавляем в очередь начальную страницу
+        create_queue_links()
         # запускаем процесс обхода
         crawl_wikipedia(MAX_PAGES=100000)
         # запускаем процесс парсинга страниц с транспортными средствами
         logger.info("Запуск парсинга страниц с транспортными средствами")
+        # Очищаем данные из таблиц относящихся к автомобилям
+        clear_vehicles_tables()
+        # запуск парсинга html
         crawl_vehicle_pages()
         logger.info("Завершение программы")
     except Exception as e:

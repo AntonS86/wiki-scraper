@@ -379,3 +379,35 @@ def save_page(data):
     except sqlite3.DatabaseError as e:
         logger.error(f"Ошибка сохранения страницы: {e}. b180040b-afce-4f11-b638-c2d337d4bc65")
         raise
+
+
+def clear_vehicles_tables():
+    """Очищаем данные из таблиц относящихся к автомобилям"""
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            cursor = conn.cursor()
+            cursor.execute("delete from vehicles")
+            cursor.execute("delete from engines")
+            cursor.execute("delete from assemblies")
+            cursor.execute("delete from transmissions")
+            cursor.execute("delete from manufacturers")
+            conn.commit()
+            logger.info("Данные из таблиц vehicles, engines, assemblies, transmissions, manufacturers удалены.")
+    except sqlite3.DatabaseError as e:
+        logger.error(f"Ошибка удаления данных из таблиц vehicles: {e}. 25f969ea-1c6b-4efc-9301-00fe6c420905")
+        raise
+
+
+def clear_page_tables():
+    """Очищаем данные из таблиц относящихся к скачиванию html"""
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            cursor = conn.cursor()
+            cursor.execute("delete from pages")
+            cursor.execute("delete from queue")
+            cursor.execute("delete from visited")
+            conn.commit()
+            logger.info("Данные из таблиц pages, queue, visited удалены.")
+    except sqlite3.DatabaseError as e:
+        logger.error(f"Ошибка удаления данных из таблиц pages: {e}. 8de64be8-7573-4217-8a1b-08da4fb88aff")
+        raise
