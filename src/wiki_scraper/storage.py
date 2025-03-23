@@ -124,6 +124,50 @@ def init_db():
             """
             )
 
+            # создание представления объединяющего все таблицы автомобилей
+            cursor.execute(
+                """
+                CREATE VIEW IF NOT EXISTS vehicle_full_data AS
+                SELECT
+                    v.id AS vehicle_id,
+                    v.filepath,
+                    v.url,
+                    v.model_name,
+                    v.model_code,
+                    v.production_start_year,
+                    v.production_end_year,
+                    v.vehicle_class,
+                    v.body_style,
+                    v.layout,
+                    v.wheelbase,
+                    v.length,
+                    v.width,
+                    v.height,
+                    v.weight,
+
+                    -- Данные о двигателе
+                    e.type_fuel,
+                    e.volume AS engine_volume,
+                    e.power AS engine_power,
+
+                    -- Данные о трансмиссии
+                    t.type AS transmission_type,
+                    t.speed AS transmission_speed,
+
+                    -- Данные о сборке
+                    a.country AS assembly_country,
+
+                    -- Данные о производителе
+                    m.company AS manufacturer
+
+                FROM vehicles v
+                LEFT JOIN engines e ON v.id = e.vehicle_id
+                LEFT JOIN transmissions t ON v.id = t.vehicle_id
+                LEFT JOIN assemblies a ON v.id = a.vehicle_id
+                LEFT JOIN manufacturers m ON v.id = m.vehicle_id;
+            """
+            )
+
             conn.commit()
 
             logger.info("База данных инициализирована.")
