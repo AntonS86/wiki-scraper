@@ -5,13 +5,13 @@ from bs4 import BeautifulSoup, Tag
 from bs4.element import NavigableString
 
 from wiki_scraper.custom_types import Vehicle
+from wiki_scraper.data.countries import parse_assembly_countries
 from wiki_scraper.utils import (
     classify_page,
     clean_html,
     clean_wiki_url,
     create_model_name,
     layout_parse,
-    parse_assembly_countries,
     parse_body_style,
     parse_class,
     parse_electric_engine,
@@ -95,7 +95,7 @@ def clean_cell(cell: Tag):
 
 
 def parse_vehicle_page(url, response_text):
-    """парсинг страницы с техникой"""
+    """парсинг страницы с автомобилями"""
     soup = BeautifulSoup(response_text, "html.parser")
 
     title_element = soup.find("h1", class_="firstHeading")

@@ -1,3 +1,5 @@
+import re
+
 countries = {
     "Afghanistan": "Afghanistan",
     "Åland Islands": "Åland Islands",
@@ -238,13 +240,13 @@ countries = {
     "United Kingdom of Great Britain and Northern Ireland": "United Kingdom",
     "United Kingdom": "United Kingdom",
     "UK": "United Kingdom",
-    "U.K.": "United Kingdom",
+    "U.K": "United Kingdom",
     "United States of America": "United States",
     "United States": "United States",
     "US": "United States",
     "USA": "United States",
-    "U.S.": "United States",
-    "U.S.A.": "United States",
+    "U.S": "United States",
+    "U.S.A": "United States",
     "United States Minor Outlying Islands": "United States Minor Outlying Islands",
     "Uruguay": "Uruguay",
     "Uzbekistan": "Uzbekistan",
@@ -259,5 +261,28 @@ countries = {
     "Zimbabwe": "Zimbabwe",
     "Soviet Union": "Soviet Union",
     "USSR": "Soviet Union",
-    "U.S.S.R.": "Soviet Union",
+    "U.S.S.R": "Soviet Union",
+    "England": "United Kingdom",
+    "Scotland": "United Kingdom",
+    "Wales": "United Kingdom",
 }
+
+# сортируем словарь по убыванию длины ключа
+countries_sorted = sorted(countries.items(), key=lambda x: len(x[0]), reverse=True)
+# из списка ключей компилируем регулярные выражения
+countries_patterns = [(re.compile(r"\b" + re.escape(tpl[0]) + r"\b"), tpl[1]) for tpl in countries_sorted]
+
+
+def parse_assembly_countries(text: str | None) -> list[str]:
+    """
+    Поиск страны сборки автомобилей из текста
+    """
+    if text is None:
+        return []
+    findSet: set[str] = set()
+    for part in text.split(";"):
+        for pattern, value in countries_patterns:
+            if pattern.search(part):
+                findSet.add(value)
+                break
+    return list(findSet)

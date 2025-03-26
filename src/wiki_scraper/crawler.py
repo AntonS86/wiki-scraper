@@ -41,8 +41,10 @@ def create_queue_links():
     """
     # Очищаем данные из таблиц относящихся к скачиванию html, очередь и посещенные
     clear_page_tables()
+    # выполняем запрос
     results = get_results(endpoint_url, query)
 
+    # создаем массив ссылок
     links: list[str] = []
     if isinstance(results, dict):
         for result in results.get("results", {}).get("bindings", []):
@@ -52,6 +54,7 @@ def create_queue_links():
 
     if not links:
         logger.error("Sparql вернул пустой массив ссылок. 41177ed8-eaf4-45a6-8641-8eeb7e53fc58")
+    # сохраняем массив в таблицу очереди
     add_new_links_to_queue(links)
 
 
@@ -81,28 +84,31 @@ headers = {
 }
 
 
-# обход страниц википедии начиная с указанного URL
 def crawl_wikipedia(MAX_PAGES=100):
+    """
+    функция обхода указанного количества страниц из очереди
+    """
+
+    session = requests.Session()
     # счетчик ошибок соединения
     connection_error_count = 0
     # счетчик пройденных страниц
     count = 0
     while count < MAX_PAGES:
+        current_url = get_next_url()
+
+        if not current_url:
+            logger.info("Очередь пуста")
+            break
+
+        # пропускаем если уже посещали
+        if is_visited(current_url):
+            mark_as_visited(current_url)
+            continue
+
         try:
-            current_url = get_next_url()
-            count += 1
-
-            if not current_url:
-                logger.info("Очередь пуста, завершение работы")
-                break
-
-            # пропускаем если уже посещали
-            if is_visited(current_url):
-                mark_as_visited(current_url)
-                continue
-
             # получаем страницу
-            response = requests.get(current_url, headers=headers)
+            response = session.get(current_url, headers=headers)
             # Проверяет успешность HTTP запроса (код 200).
             # Если код ответа не 200,
             # выбрасывает исключение requests.exceptions.HTTPError
@@ -119,9 +125,8 @@ def crawl_wikipedia(MAX_PAGES=100):
                 # если редирект на посещенную страницу, то пропускаем
                 if is_visited(canonical_url):
                     continue
-                else:
-                    # если редирект на новую страницу, то обновляем текущий URL
-                    current_url = canonical_url
+                # если редирект на новую страницу, то обновляем текущий URL
+                current_url = canonical_url
 
             # парсим страницу
             page_data = parse_wikipedia_page(current_url, response.text)
@@ -136,25 +141,25 @@ def crawl_wikipedia(MAX_PAGES=100):
             # успешного сохранения в БД и файл
             mark_as_visited(current_url)
 
+            count += 1
             # задержка между запросами
             time.sleep(random.uniform(0.5, 1.1))
 
         except requests.exceptions.HTTPError as e:
             # обработка некоторых кодов ошибок
-            if response.status_code == 429 or response.status_code == 503 or response.status_code == 403:
+            if response.status_code in {403, 429, 503}:
                 logger.warning(f"Ошибка HTTP: слишком много запросов, {e}; f4e66669-ecc1-498e-a71d-384715cb3ec7")
                 time.sleep(random.uniform(5, 15))
-                continue
-            if response.status_code == 404:
+            elif response.status_code == 404:
                 logger.warning(f"Ошибка HTTP: страница не найдена, {e}; 0867fcd0-a0d8-4cf5-9793-e9937c4fc0a0")
                 mark_as_visited(current_url)
                 time.sleep(random.uniform(1, 3))
-                continue
-
-            logger.error(f"Ошибка HTTP: {e}; 36b8564d-a09c-4420-bf2d-d5ed93acaaac")
-            break
+            else:
+                logger.error(f"Ошибка HTTP: {e}; 36b8564d-a09c-4420-bf2d-d5ed93acaaac")
+                break
 
         except requests.exceptions.ConnectionError:
+            connection_error_count += 1
             if connection_error_count > 20:
                 logger.error(
                     f"Ошибка соединения. Не смогли подключиться больше {connection_error_count} раз."
@@ -162,13 +167,13 @@ def crawl_wikipedia(MAX_PAGES=100):
                 )
                 break
             logger.warning("Ошибка соединения. Проверяем интернет и пробуем снова...")
-            connection_error_count += 1
             time.sleep(10)
-            continue
 
         except Exception as e:
             logger.error(f"Ошибка при обработке {current_url}: {e}; 3bb71c46-60bb-43d7-868b-81521e44001f")
             break
+
+    logger.info("Обход завершён.")
 
 
 def crawl_vehicle_pages():

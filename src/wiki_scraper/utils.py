@@ -7,7 +7,6 @@ from bs4 import BeautifulSoup, Tag
 
 from wiki_scraper.custom_types import Engine, ListClassifyPattern, Transmission
 from wiki_scraper.data.body_style_patterns import body_style_patterns
-from wiki_scraper.data.countries import countries
 from wiki_scraper.data.fuel_types import fuel_types
 from wiki_scraper.data.layout_patterns import classify_layout
 from wiki_scraper.data.transmissions import transmissions
@@ -44,7 +43,7 @@ def find_canonical_url(text: str) -> str | None:
     if isinstance(canonical, Tag):
         href = canonical.get("href")
         if isinstance(href, str):
-            return urljoin(WIKI_BASE_URL, clean_wiki_url(href))
+            return clean_url(href)
     return None
 
 
@@ -327,7 +326,7 @@ def create_model_name(page_title, infobox_title):
         return f"{page_title} ({infobox_title})"
 
 
-# шаблон для поиска годов производства
+# шаблон для поиска диапазонов годов производства
 years_pattern = re.compile(r"\b(?:[A-Za-z]+ )?(\d{4})\s*-\s*(?:[A-Za-z]+ )?(\d{4}|present|current)\b", re.IGNORECASE)
 
 
@@ -356,21 +355,6 @@ def parse_years_range(years_str: str | None) -> tuple[int | None, int | None]:
         max_year = max(end for _, end in parsed_years if end is not None)
 
     return min_year, max_year
-
-
-# шаблон для поиска стран сборки автомобилей
-country_patterns = re.compile(r"(?:^|/|(?:;\s)|(?:,\s)|(?:\)\s))([a-zA-Z\s]+?)(?=,|:|/|;|$)")
-
-
-def parse_assembly_countries(text: str | None) -> List[str]:
-    """
-    Парсит страны сборки автомобилей из текста
-    """
-
-    if text is None:
-        return []
-    words: list[str] = country_patterns.findall(text)
-    return [countries.get(word, "") for word in words if word in countries]
 
 
 # шаблон для поиска производителей автомобилей

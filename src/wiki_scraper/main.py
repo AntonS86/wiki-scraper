@@ -6,8 +6,6 @@ from wiki_scraper.crawler import (
 from wiki_scraper.logger import logger
 from wiki_scraper.storage import clear_vehicles_tables, init_db
 
-# ROOT_URL = "https://en.wikipedia.org/wiki/List_of_automobile_manufacturers"
-
 if __name__ == "__main__":
     try:
         logger.info("Запуск программы")
