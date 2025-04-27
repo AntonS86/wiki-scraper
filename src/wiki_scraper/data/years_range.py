@@ -7,7 +7,7 @@ re_remove_spaces_around_dash = re.compile(r"\s?-\s?")  # Убираем лишн
 re_remove_words_between_years = re.compile(r"(?<=-)[^-\d]*(?:\d{1,2}[^\d;]*)?(?=\d{4})")  # удаляем слова между годами
 re_fix_incomplete_range = re.compile(r"(?<=\d{4})-(?=;|$)")  # добавляем текущий год к диапазону
 
-re_find_years_range = re.compile(r"(\d{4})(?:-)(\d{2,4})")  # Находим диапазон годов
+re_find_years_range = re.compile(r"\b(\d{4})(?:-)(\d{2}|\d{4})\b")  # Находим диапазон годов
 re_find_single_year = re.compile(r"\b(\d{4})\b")  # Находим одиночный год
 
 
@@ -17,13 +17,16 @@ def parse_years_range(text: str | None) -> tuple[int | None, int | None]:
     """
     if text is None:
         return (None, None)
+
+    current_year = datetime.now().year
+
     text = text.lower()
     text = text.replace(" to ", " - ")  # Заменяем 'to' на '-'
     text = re_remove_parentheses_comments.sub("", text)  # Убираем скобки с комментариями
-    text = re_replace_present_current.sub(str(datetime.now().year), text)  # Заменяем 'present|current' на текущий год
+    text = re_replace_present_current.sub(str(current_year), text)  # Заменяем 'present|current' на текущий год
     text = re_remove_spaces_around_dash.sub("-", text)  # Убираем лишние пробелы вокруг '-'
     text = re_remove_words_between_years.sub("", text)  # удаляем день и месяц из диапазона
-    text = re_fix_incomplete_range.sub("-" + str(datetime.now().year), text)  # добавляем текущий год к диапазону
+    text = re_fix_incomplete_range.sub("-" + str(current_year), text)  # добавляем текущий год к диапазону
 
     ranges = re_find_years_range.findall(text)
     if ranges:
@@ -42,6 +45,9 @@ def parse_years_range(text: str | None) -> tuple[int | None, int | None]:
     single_year_pattern = re_find_single_year.search(text)
     if single_year_pattern:
         year = int(single_year_pattern.group(1))
+        # Очищаем от выбросов
+        if year < 1885 or year > current_year:
+            return (None, None)
         return (year, None)
 
     return (None, None)

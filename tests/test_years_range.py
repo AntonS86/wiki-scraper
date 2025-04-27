@@ -24,3 +24,5 @@ def test_parse_years_range():
         2006,
     )
     assert parse_years_range("1920-27;1500 approx produced") == (1920, 1927)
+    assert parse_years_range("4050") == (None, None)
+    assert parse_years_range("1978-200?") == (1978, None)

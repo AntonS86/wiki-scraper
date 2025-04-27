@@ -2,7 +2,6 @@ import json
 from typing import Dict, List
 
 from bs4 import BeautifulSoup, Tag
-from bs4.element import NavigableString
 
 from wiki_scraper.custom_types import Vehicle
 from wiki_scraper.data.countries import parse_assembly_countries
@@ -71,27 +70,26 @@ def clean_text(text: str, default="N/A"):
     return text if text else default
 
 
-def clean_cell(cell: Tag):
+def clean_cell(cell: Tag) -> str:
     """обработка и извлечение текста из ячейки"""
 
-    # обработка td
-    # поиск списков
-    lis = cell.find_all("li")
-    if len(lis) > 0:
-        lst = [clean_text(li.get_text(" ", strip=True)) for li in lis]
-        return ";".join(lst)
+    parts: List[str] = []
+    for el in cell.contents:
+        if isinstance(el, Tag):
+            if el.name == "br":
+                continue
+            else:
+                lis = el.find_all("li")
+                if lis:
+                    for li in el.find_all("li"):
+                        parts.append(clean_text(li.get_text(" ", strip=True)))
+                else:
+                    parts.append(clean_text(el.get_text(" ", strip=True)))
 
-    # поиск списков с разделителями <br>
-    brs = cell.find_all("br")
-    if len(brs) > 0:
-        # замена <br> на строковый разделитель
-        for br in brs:
-            br.replace_with(NavigableString("#br#"))
-        lst = [clean_text(li) for li in cell.get_text(" ", strip=True).split("#br#")]
-        return ";".join(lst)
+        else:
+            parts.append(clean_text(el.get_text(" ", strip=True)))
 
-    # в остальных случаях
-    return clean_text(cell.get_text(" ", strip=True))
+    return ";".join(parts)
 
 
 def parse_vehicle_page(url, response_text):
