@@ -326,37 +326,6 @@ def create_model_name(page_title, infobox_title):
         return f"{page_title} ({infobox_title})"
 
 
-# шаблон для поиска диапазонов годов производства
-years_pattern = re.compile(r"\b(?:[A-Za-z]+ )?(\d{4})\s*-\s*(?:[A-Za-z]+ )?(\d{4}|present|current)\b", re.IGNORECASE)
-
-
-def parse_years_range(years_str: str | None) -> tuple[int | None, int | None]:
-    """
-    Извлекает минимальный и максимальный год производства из строки.
-    """
-    if years_str is None:
-        return None, None
-
-    years = years_pattern.findall(years_str)
-    if not years:
-        return None, None
-
-    # Преобразуем года в числа, обрабатывая 'present' как None
-    parsed_years = [(int(start), None if end.lower() in ["present", "current"] else int(end)) for start, end in years]
-
-    # Находим минимальный начальный год
-    min_year = min(start for start, _ in parsed_years)
-
-    # Если хотя бы один диапазон заканчивается на None (present),
-    # значит производство все еще идет
-    if any(end is None for _, end in parsed_years):
-        max_year = None
-    else:
-        max_year = max(end for _, end in parsed_years if end is not None)
-
-    return min_year, max_year
-
-
 # шаблон для поиска производителей автомобилей
 manufacture_patterns = re.compile(r"[A-Z][A-Za-z]+(?:[ \-][A-Z][A-Za-z]+)*")
 

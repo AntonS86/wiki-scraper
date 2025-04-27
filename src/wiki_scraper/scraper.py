@@ -6,6 +6,7 @@ from bs4.element import NavigableString
 
 from wiki_scraper.custom_types import Vehicle
 from wiki_scraper.data.countries import parse_assembly_countries
+from wiki_scraper.data.years_range import parse_years_range
 from wiki_scraper.utils import (
     classify_page,
     clean_html,
@@ -20,7 +21,6 @@ from wiki_scraper.utils import (
     parse_manufacturer_company,
     parse_meters,
     parse_transmission,
-    parse_years_range,
     remove_diacritics,
     str_to_column_name,
     url_to_filepath,

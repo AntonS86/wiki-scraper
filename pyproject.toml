@@ -29,6 +29,12 @@ line-length = 120
 [tool.isort]
 profile = "black"
 
+[tool.pytest.ini_options]
+pythonpath = "src"
+testpaths = [
+    "tests",
+]
+
 [tool.poetry]
 packages = [{ include = "wiki_scraper", from = "src" }]
 [tool.poetry.group.dev.dependencies]
@@ -37,4 +43,5 @@ pre-commit = "^4.1.0"
 types-requests = "^2.32.0.20241016"
 mypy = "^1.15.0"
 autoflake = "^2.3.1"
+pytest = "^8.3.5"
 
