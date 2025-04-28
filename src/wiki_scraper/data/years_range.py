@@ -28,6 +28,7 @@ def parse_years_range(text: str | None) -> tuple[int | None, int | None]:
     text = re_remove_words_between_years.sub("", text)  # удаляем день и месяц из диапазона
     text = re_fix_incomplete_range.sub("-" + str(current_year), text)  # добавляем текущий год к диапазону
 
+    # получение списка диапазонов годов
     ranges = re_find_years_range.findall(text)
     if ranges:
         years_list = []
@@ -42,6 +43,7 @@ def parse_years_range(text: str | None) -> tuple[int | None, int | None]:
         max_year = max(years_list, key=lambda x: x[1])[1]
         return (min_year, max_year)
 
+    # Получение одиночного года
     single_year_pattern = re_find_single_year.search(text)
     if single_year_pattern:
         year = int(single_year_pattern.group(1))
@@ -51,8 +53,3 @@ def parse_years_range(text: str | None) -> tuple[int | None, int | None]:
         return (year, None)
 
     return (None, None)
-
-
-if __name__ == "__main__":
-    pass
-    # print(parse_years_range("1941 - 1942, 1946 - 3 march 1948"), '\n')
