@@ -2,6 +2,7 @@ import json
 from typing import Dict, List
 
 from bs4 import BeautifulSoup, Tag
+from bs4.element import NavigableString
 
 from wiki_scraper.custom_types import Vehicle
 from wiki_scraper.data.countries import parse_assembly_countries
@@ -62,7 +63,7 @@ def clean_text(text: str, default="N/A"):
     """
     if text is None:
         return default
-    replacements = {"\xa0": " ", "\u2013": "-", "\u2014": "-", ";": ","}
+    replacements = {"\xa0": " ", "\u2013": "-", "\u2014": "-", "  ": " ", ";;": ";"}
 
     for old, new in replacements.items():
         text = text.replace(old, new)
@@ -74,22 +75,27 @@ def clean_cell(cell: Tag) -> str:
     """обработка и извлечение текста из ячейки"""
 
     parts: List[str] = []
-    for el in cell.contents:
-        if isinstance(el, Tag):
+
+    for i, el in enumerate(cell.contents):
+        if isinstance(el, NavigableString):
+            string = str(el)
+            if i > 0 and isinstance(cell.contents[i - 1], NavigableString):
+                parts[-1] += string
+            # если элемент - строка, то добавляем его в список
+            else:
+                parts.append(string)
+        elif isinstance(el, Tag):
             if el.name == "br":
                 continue
             else:
                 lis = el.find_all("li")
                 if lis:
                     for li in el.find_all("li"):
-                        parts.append(clean_text(li.get_text(" ", strip=True)))
+                        parts.append(li.get_text(" ", strip=True))
                 else:
-                    parts.append(clean_text(el.get_text(" ", strip=True)))
+                    parts.append(el.get_text(" ", strip=True))
 
-        else:
-            parts.append(clean_text(el.get_text(" ", strip=True)))
-
-    return ";".join(parts)
+    return clean_text(";".join(parts))
 
 
 def parse_vehicle_page(url, response_text):
@@ -99,10 +105,15 @@ def parse_vehicle_page(url, response_text):
     title_element = soup.find("h1", class_="firstHeading")
     title = title_element.get_text() if title_element else ""
 
-    # удаление ссылок над строками
+    # удаление ссылок-сносок над строками
     links = soup.find_all("sup", class_="reference")
     for link in links:
         link.decompose()
+
+    # замена ссылок на содержимое
+    for tag in soup.find_all(["a", "i", "b"]):
+        if isinstance(tag, Tag):
+            tag.unwrap()
 
     vehicle_list: List[Vehicle] = []
 
