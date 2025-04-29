@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup, Tag
 
 from wiki_scraper.custom_types import Engine, ListClassifyPattern, Transmission
 from wiki_scraper.data.body_style_patterns import body_style_patterns
+from wiki_scraper.data.dimensions import find_max_kilograms, find_max_meters
 from wiki_scraper.data.fuel_types import fuel_types
 from wiki_scraper.data.layout_patterns import classify_layout
 from wiki_scraper.data.transmissions import transmissions
@@ -531,41 +532,10 @@ def layout_parse(text: str | None) -> str | None:
     return ";".join(cats)
 
 
-millimeters_pattern = re.compile(r"\b(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s?mm\b")
-
-
-def find_max_millimeters(text: str | None) -> float | None:
-    """
-    Находит максимальное значение в миллиметрах в текст
-    """
-    if text is None:
-        return None
-    all = millimeters_pattern.findall(text)
-    millimeters = list(map(lambda x: float(x.replace(",", "")), all))
-    return max(millimeters) if millimeters else None
-
-
-meters_pattern = re.compile(r"\b(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s?(?:metres|m)\b")
-
-
-def find_max_meters(text: str | None) -> float | None:
-    """
-    Находит максимальное значение в метрах в текст
-    """
-    if text is None:
-        return None
-    all = meters_pattern.findall(text)
-    meters = list(map(lambda x: float(x.replace(",", "")), all))
-    return max(meters) if meters else None
-
-
 def parse_meters(text: str | None) -> float | None:
     """
     Парсит длину в метрах
     """
-    mm = find_max_millimeters(text)
-    if mm is not None:
-        return mm / 1000
     return find_max_meters(text)
 
 
@@ -576,8 +546,4 @@ def parse_kilogrames(text: str | None) -> float | None:
     """
     Парсит вес в килограммах
     """
-    if text is None:
-        return None
-    all = kilograms_pattern.findall(text)
-    kilogrames = list(map(lambda x: float(x.replace(",", "")), all))
-    return max(kilogrames) if kilogrames else None
+    return find_max_kilograms(text)
