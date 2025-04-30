@@ -37,6 +37,10 @@ testpaths = [
 
 [tool.poetry]
 packages = [{ include = "wiki_scraper", from = "src" }]
+
+[tool.poetry.scripts]
+wiki-scraper = "wiki_scraper.main:main"
+
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
 pre-commit = "^4.1.0"

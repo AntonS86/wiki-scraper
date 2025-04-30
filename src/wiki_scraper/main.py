@@ -6,7 +6,8 @@ from wiki_scraper.crawler import (
 from wiki_scraper.logger import logger
 from wiki_scraper.storage import clear_vehicles_tables, init_db
 
-if __name__ == "__main__":
+
+def main():
     try:
         logger.info("Запуск программы")
         # инициализируем базу данных
@@ -25,3 +26,7 @@ if __name__ == "__main__":
         logger.info("Завершение программы")
     except Exception as e:
         logger.error(f"Ошибка: {e}: b1f785e6-007c-43cf-856e-ca1e270ffe44")
+
+
+if __name__ == "__main__":
+    main()
