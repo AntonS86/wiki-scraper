@@ -6,6 +6,7 @@ from bs4.element import NavigableString
 
 from wiki_scraper.custom_types import Vehicle
 from wiki_scraper.data.countries import parse_assembly_countries
+from wiki_scraper.data.vehicle_class import parse_vehicle_class
 from wiki_scraper.data.years_range import parse_years_range
 from wiki_scraper.utils import (
     classify_page,
@@ -14,7 +15,6 @@ from wiki_scraper.utils import (
     create_model_name,
     layout_parse,
     parse_body_style,
-    parse_class,
     parse_electric_engine,
     parse_engine,
     parse_kilogrames,
@@ -63,7 +63,7 @@ def clean_text(text: str, default="N/A"):
     """
     if text is None:
         return default
-    replacements = {"\xa0": " ", "\u2013": "-", "\u2014": "-", "  ": " ", ";;": ";"}
+    replacements = {"\xa0": " ", "\u2013": "-", "\u2014": "-", "\t": "", "\n": "", "  ": " ", ";;": ";"}
 
     for old, new in replacements.items():
         text = text.replace(old, new)
@@ -107,6 +107,10 @@ def parse_vehicle_page(url, response_text):
 
     # удаление ссылок-сносок над строками
     links = soup.find_all("sup", class_="reference")
+    for link in links:
+        link.decompose()
+
+    links = soup.find_all("link")
     for link in links:
         link.decompose()
 
@@ -173,7 +177,7 @@ def parse_vehicle_page(url, response_text):
             "manufacturer_list": parse_manufacturer_company(tmp_dict.get("manufacturer")),
             "engine_list": engine + electric_engine,
             "transmission_list": parse_transmission(tmp_dict.get("transmission")),
-            "vehicle_class": parse_class(tmp_dict.get("class")),
+            "vehicle_class": parse_vehicle_class(tmp_dict.get("class")),
             "body_style": parse_body_style(tmp_dict.get("body_style")),
             "layout": layout_parse(tmp_dict.get("layout")),
             "wheelbase": parse_meters(tmp_dict.get("wheelbase")),

@@ -474,24 +474,6 @@ def parse_transmission(text: str | None) -> List[Transmission]:
 # паттерны для поиска двойного разделителя
 double_delimiter_pattern = re.compile(r";;")
 
-# паттерны для замены разделителей
-class_delimiter_pattern = re.compile(r"\s*(?:[,/]|and)\s*")
-
-class_sub_pattern = re.compile(r"\s*\((?![A-Z]\b)[^)]*\)")
-
-
-def parse_class(text: str | None) -> str | None:
-    """
-    Очищаем класс автомобиля от лишних данных
-    """
-    if text is None:
-        return None
-    text = class_sub_pattern.sub("", text)
-    text = class_delimiter_pattern.sub(";", text)
-    text = double_delimiter_pattern.sub(";", text)
-    return text.lower().strip()
-
-
 body_minus_pattern = re.compile(r"-(?=/)")
 body_delimiter_pattern = re.compile(r"(?<=[^\d])\s*(?:[,/]|and|or)\s*")
 # поиск данных в скобках
